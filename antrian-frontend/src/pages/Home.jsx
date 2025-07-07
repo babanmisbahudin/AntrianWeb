@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import api from "../api/api";
+
 
 export default function Home() {
   const [kasir, setKasir] = useState("-");
@@ -6,21 +8,29 @@ export default function Home() {
   const [hargaEmas, setHargaEmas] = useState([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setKasir(localStorage.getItem("lastKasir") || "-");
-      setPenaksir(localStorage.getItem("lastPenaksir") || "-");
-    }, 2000);
+  const interval = setInterval(() => {
+    setKasir(localStorage.getItem("lastKasir") || "-");
+    setPenaksir(localStorage.getItem("lastPenaksir") || "-");
+  }, 2000);
 
-    // Dummy harga emas (nanti bisa ganti ke API Galeri24)
-    setHargaEmas([
-      { berat: "0.5 gram", beli: 605000, buyback: 575000 },
-      { berat: "1 gram", beli: 1120000, buyback: 1090000 },
-      { berat: "2 gram", beli: 2200000, buyback: 2180000 },
-      { berat: "5 gram", beli: 5400000, buyback: 5370000 },
-    ]);
+  const fetchHargaEmas = async () => {
+    try {
+      const res = await api.get("/gold-prices");
+      setHargaEmas(res.data);
+    } catch (err) {
+      console.error("Gagal ambil harga emas:", err);
+    }
+  };
 
-    return () => clearInterval(interval);
+  fetchHargaEmas();
+  const refreshInterval = setInterval(fetchHargaEmas, 60000); // auto-refresh tiap 1 menit
+
+  return () => {
+    clearInterval(interval);
+    clearInterval(refreshInterval);
+  };
   }, []);
+
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col">

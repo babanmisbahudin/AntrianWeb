@@ -1,8 +1,23 @@
+// routes/hargaEmasRoutes.js
 const express = require("express");
 const router = express.Router();
-const controller = require("../controllers/hargaEmasController");
+const {
+  getAllHarga,
+  addHarga,
+  updateHarga,
+  deleteHarga
+} = require("../controllers/hargaEmasController");
 
-router.get("/", controller.getHarga);
-router.post("/", controller.upsertHarga); // gunakan metode POST untuk tambah/update
+// GET semua data harga emas
+router.get("/", getAllHarga);
+
+// POST tambah harga emas
+router.post("/", addHarga);
+
+// PUT update semua harga emas
+router.put("/", updateHarga);
+
+// DELETE satu baris harga emas
+router.delete("/:id", deleteHarga);
 
 module.exports = router;

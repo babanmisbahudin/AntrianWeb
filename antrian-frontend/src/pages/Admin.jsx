@@ -31,8 +31,8 @@ export default function Admin() {
         const videoRes = await api.get("/videos");
         setVideoList(videoRes.data);
 
-        const storedHarga = localStorage.getItem("hargaEmas");
-        if (storedHarga) setHargaEmas(JSON.parse(storedHarga));
+        const hargaRes = await api.get("/harga-emas");
+        setHargaEmas(hargaRes.data);
       } catch (err) {
         console.error("Gagal ambil data:", err);
         alert("Gagal mengambil data dari server.");
@@ -162,16 +162,54 @@ export default function Admin() {
   };
 
   const handleHargaChange = (index, field, value) => {
-    const updated = [...hargaEmas];
-    updated[index][field] = field === "berat" ? value : parseInt(value);
-    setHargaEmas(updated);
-    localStorage.setItem("hargaEmas", JSON.stringify(updated));
+  const updated = [...hargaEmas];
+  updated[index] = { ...updated[index], [field]: value };
+  setHargaEmas(updated);
   };
 
-  const handleAddHarga = () => {
-    const updated = [...hargaEmas, { berat: "", beli: 0, buyback: 0 }];
+const handleAddHarga = () => {
+  // Tambahkan baris kosong ke state saja, tanpa kirim ke backend
+  setHargaEmas([...hargaEmas, { berat: "", beli: 0, buyback: 0 }]);
+  };
+
+const handleUpdateHarga = async (index) => {
+  const item = hargaEmas[index];
+  try {
+    const res = await api.put(`/harga-emas/${item._id}`, item);
+    const updated = [...hargaEmas];
+    updated[index] = res.data;
     setHargaEmas(updated);
-    localStorage.setItem("hargaEmas", JSON.stringify(updated));
+    alert("Data berhasil disimpan");
+  } catch (err) {
+    console.error("Gagal update harga emas:", err);
+    alert("Gagal update data");
+  }
+  };
+
+  const handleSaveHarga = async (index) => {
+  const item = hargaEmas[index];
+  if (!item.berat || isNaN(item.beli) || isNaN(item.buyback)) {
+    return alert("Lengkapi semua kolom dengan benar!");
+  }
+
+  try {
+    // Cek apakah ini data baru atau update
+    if (item._id) {
+      const res = await api.put(`/harga-emas/${item._id}`, item);
+      const updated = [...hargaEmas];
+      updated[index] = res.data;
+      setHargaEmas(updated);
+    } else {
+      const res = await api.post("/harga-emas", item);
+      const updated = [...hargaEmas];
+      updated[index] = res.data;
+      setHargaEmas(updated);
+    }
+    alert("Harga emas berhasil disimpan.");
+  } catch (err) {
+    console.error(err);
+    alert("Gagal simpan harga emas.");
+  }
   };
 
   const userProfile = users.find(u => u.role === "admin") || {
@@ -327,23 +365,62 @@ export default function Admin() {
       </div>
 
       {/* HARGA EMAS */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <div className="bg-white p-4 rounded-lg shadow mb-8">
         <h2 className="font-semibold mb-2">Harga Emas</h2>
-        <table className="w-full border text-center text-sm">
+        <table className="w-full border text-center text-sm mb-2">
           <thead className="bg-yellow-100">
-            <tr><th>Berat</th><th>Harga Beli</th><th>Buyback</th></tr>
+            <tr>
+              <th>Berat</th>
+              <th>Harga Beli</th>
+              <th>Buyback</th>
+              <th>Aksi</th>
+            </tr>
           </thead>
-          <tbody>
-            {hargaEmas.map((item, i) => (
-              <tr key={i}>
-                <td><input type="text" value={item.berat} onChange={(e) => handleHargaChange(i, "berat", e.target.value)} className="w-full p-1 border rounded" /></td>
-                <td><input type="number" value={item.beli} onChange={(e) => handleHargaChange(i, "beli", e.target.value)} className="w-full p-1 border rounded" /></td>
-                <td><input type="number" value={item.buyback} onChange={(e) => handleHargaChange(i, "buyback", e.target.value)} className="w-full p-1 border rounded" /></td>
-              </tr>
-            ))}
-          </tbody>
+        <tbody>
+        {hargaEmas.map((item, i) => (
+          <tr key={i}>
+            <td>
+              <input
+                type="text"
+                value={item.berat}
+                onChange={(e) => handleHargaChange(i, "berat", e.target.value)}
+                className="w-full p-1 border rounded"
+              />
+            </td>
+            <td>
+              <input
+                type="number"
+                value={item.beli}
+                onChange={(e) => handleHargaChange(i, "beli", e.target.value)}
+                className="w-full p-1 border rounded"
+              />
+            </td>
+            <td>
+              <input
+                type="number"
+                value={item.buyback}
+                onChange={(e) => handleHargaChange(i, "buyback", e.target.value)}
+                className="w-full p-1 border rounded"
+              />
+            </td>
+            <td>
+              <button
+                onClick={() => handleSaveHarga(i)}
+                className="bg-green-600 text-white text-sm px-2 py-1 rounded hover:bg-green-700"
+              >
+                💾 Simpan
+              </button>
+            </td>
+          </tr>
+        ))}
+        </tbody>
         </table>
-        <button onClick={handleAddHarga} className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Tambah Baris</button>
-      </div>
-    </div>
-  );}
+        <button
+          onClick={handleAddHarga}
+          className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+        >
+          Tambah Baris
+        </button>
+            </div>
+          </div>
+        );}
